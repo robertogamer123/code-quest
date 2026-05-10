@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Code Quest: Java & Lua</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&family=Silkscreen:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body class="theme-dark">
+  <!-- Estrelas animadas de fundo -->
+  <div id="starfield" aria-hidden="true"></div>
+
+  <!-- HUD persistente (oculto no menu) -->
+  <header id="hud" class="hud hidden" aria-label="Status do jogador">
+    <div class="hud-left">
+      <button class="btn-ghost" id="btn-home" title="Voltar ao mapa">🏠 Mapa</button>
+      <span class="pill"><span class="pill-label">Nível</span> <span id="hud-level">1</span></span>
+      <div class="xpbar" title="Experiência">
+        <div id="hud-xp-fill" class="xpbar-fill"></div>
+        <span id="hud-xp-text" class="xpbar-text">0 / 100 XP</span>
+      </div>
+      <span class="pill"><span class="pill-label">💰</span> <span id="hud-coins">0</span></span>
+    </div>
+    <div class="hud-right">
+      <span class="pill" id="hud-pixel" title="Sua conta">🧑‍💻 <span id="hud-user">Pixel</span></span>
+      <span class="pill" id="hud-cred" title="Credibilidade">🎯 <span id="hud-cred-val">100%</span></span>
+      <button class="btn-ghost" id="btn-shop">🛒</button>
+      <button class="btn-ghost" id="btn-achievements">🏆</button>
+      <button class="btn-ghost" id="btn-leaderboard">📊</button>
+      <button class="btn-ghost" id="btn-settings-mini">⚙️</button>
+      <button class="btn-ghost" id="btn-logout" title="Sair">🚪</button>
+    </div>
+  </header>
+
+  <main id="app">
+    <!-- Tela de Login -->
+    <section id="screen-login" class="screen active">
+      <div class="login-wrap">
+        <h1 class="title-glow">Code Quest<span class="subtitle">: Java &amp; Lua</span></h1>
+        <p class="tag">Crie sua conta para salvar seu progresso!</p>
+        <div class="login-card">
+          <div class="login-tabs">
+            <button class="tab active" data-login-tab="login">Entrar</button>
+            <button class="tab" data-login-tab="register">Criar conta</button>
+            <button class="tab" data-login-tab="restore">Restaurar</button>
+          </div>
+
+          <form id="form-login" class="login-form" autocomplete="off">
+            <label>Usuário <input id="login-user"  type="text" maxlength="20" required /></label>
+            <label>Senha   <input id="login-pass"  type="password" minlength="4" required /></label>
+            <p class="login-error" id="login-error"></p>
+            <button type="submit" class="btn-primary">▶ Entrar</button>
+          </form>
+
+          <form id="form-register" class="login-form hidden" autocomplete="off">
+            <label>Usuário <input id="reg-user" type="text" minlength="3" maxlength="20" required /></label>
+            <label>Senha   <input id="reg-pass" type="password" minlength="4" required /></label>
+            <label>Confirmar senha <input id="reg-pass2" type="password" minlength="4" required /></label>
+            <p class="login-error" id="reg-error"></p>
+            <button type="submit" class="btn-primary">✚ Criar conta</button>
+          </form>
+
+          <form id="form-restore" class="login-form hidden" autocomplete="off">
+            <label>Cole seu Código de Backup
+              <textarea id="restore-code" rows="3" placeholder="CQ:..."></textarea>
+            </label>
+            <p class="login-error" id="restore-error"></p>
+            <button type="submit" class="btn-primary">📥 Restaurar</button>
+          </form>
+
+          <p class="login-hint">Sua senha é guardada com hash PBKDF2 (50.000 iterações). Nem nós conseguimos lê-la.</p>
+        </div>
+
+        <details class="login-extra">
+          <summary>Ver placar global</summary>
+          <div id="login-leaderboard" class="rank-board"></div>
+        </details>
+      </div>
+    </section>
+
+    <!-- Tela do menu principal -->
+    <section id="screen-menu" class="screen">
+      <div class="menu-wrap">
+        <h1 class="title-glow">Code Quest<span class="subtitle">: Java &amp; Lua</span></h1>
+        <p class="tag">Salve Codária aprendendo a programar! 🚀</p>
+        <div class="menu-buttons">
+          <button class="btn-primary" data-action="play">▶ Jogar</button>
+          <button class="btn-secondary" data-action="continue">⏎ Continuar</button>
+          <button class="btn-secondary" data-action="freemode">⚡ Modo Livre</button>
+          <button class="btn-secondary" data-action="settings">⚙ Configurações</button>
+          <button class="btn-secondary" data-action="credits">📜 Créditos</button>
+        </div>
+        <p class="hint" id="menu-save-info"></p>
+      </div>
+    </section>
+
+    <!-- Seleção de linguagem -->
+    <section id="screen-lang" class="screen">
+      <div class="lang-wrap">
+        <button class="back-btn" data-back="screen-menu">← Voltar</button>
+        <h2>Escolha sua jornada</h2>
+        <p class="muted">Você pode mudar a qualquer momento.</p>
+        <div class="lang-cards">
+          <button class="lang-card" data-lang="java">
+            <div class="lang-icon">☕</div>
+            <h3>Aprender Java</h3>
+            <p>Linguagem clássica, tipada e cheia de poder.</p>
+            <code>System.out.println("Olá!");</code>
+          </button>
+          <button class="lang-card" data-lang="lua">
+            <div class="lang-icon">🌙</div>
+            <h3>Aprender Lua</h3>
+            <p>Leve, rápida e usada em jogos famosos.</p>
+            <code>print("Olá!")</code>
+          </button>
+          <button class="lang-card" data-lang="both">
+            <div class="lang-icon">⚖️</div>
+            <h3>Comparar Java e Lua</h3>
+            <p>Veja os dois lado a lado em cada desafio.</p>
+            <code>// dois mundos, um código</code>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Mapa de mundos -->
+    <section id="screen-map" class="screen">
+      <div class="map-wrap">
+        <h2 class="map-title">Mapa de Codária</h2>
+        <p class="muted">Selecione um mundo para entrar.</p>
+        <div id="worlds-grid" class="worlds-grid"></div>
+      </div>
+    </section>
+
+    <!-- Lista de fases (dentro de um mundo) -->
+    <section id="screen-world" class="screen">
+      <div class="world-wrap">
+        <button class="back-btn" data-back="screen-map">← Mapa</button>
+        <h2 id="world-title"></h2>
+        <p id="world-desc" class="muted"></p>
+        <div id="levels-grid" class="levels-grid"></div>
+      </div>
+    </section>
+
+    <!-- Tela de jogo / desafio -->
+    <section id="screen-challenge" class="screen">
+      <div class="challenge-wrap">
+        <div class="challenge-header">
+          <button class="back-btn" id="back-to-world">← Fases</button>
+          <h2 id="challenge-title"></h2>
+          <div class="challenge-tabs" id="lang-tabs">
+            <button class="tab active" data-tab="java">Java</button>
+            <button class="tab" data-tab="lua">Lua</button>
+          </div>
+        </div>
+
+        <div class="challenge-body">
+          <aside class="challenge-info">
+            <div class="scene" id="scene-art" aria-hidden="true"></div>
+            <div class="story-card">
+              <h3 id="challenge-story-title">Sua missão</h3>
+              <p id="challenge-story"></p>
+              <div class="explain" id="challenge-explain"></div>
+              <div class="example" id="challenge-example"></div>
+            </div>
+          </aside>
+
+          <div class="editor-pane">
+            <div class="editor-toolbar">
+              <span class="editor-lang" id="editor-lang-label">Java</span>
+              <div class="editor-actions">
+                <button id="btn-hint" class="btn-ghost">💡 Dica</button>
+                <button id="btn-explain" class="btn-ghost">📖 Explicação</button>
+                <button id="btn-reset-code" class="btn-ghost">↺ Limpar</button>
+                <button id="btn-run" class="btn-primary">▶ Executar</button>
+              </div>
+            </div>
+            <div class="editor-shell">
+              <pre class="editor-highlight" id="editor-highlight"></pre>
+              <textarea id="editor" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
+            </div>
+            <div class="output" id="output">
+              <div class="output-header">Saída</div>
+              <pre id="output-text">Clique em ▶ Executar para rodar seu código.</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Modo Livre -->
+    <section id="screen-free" class="screen">
+      <div class="challenge-wrap">
+        <div class="challenge-header">
+          <button class="back-btn" data-back="screen-menu">← Menu</button>
+          <h2>Modo Livre — Sandbox</h2>
+          <div class="challenge-tabs" id="free-lang-tabs">
+            <button class="tab active" data-tab="java">Java</button>
+            <button class="tab" data-tab="lua">Lua</button>
+          </div>
+        </div>
+        <div class="challenge-body">
+          <aside class="challenge-info">
+            <div class="story-card">
+              <h3>Sandbox de código</h3>
+              <p>Teste qualquer código Java ou Lua. O simulador entende:
+                <code>System.out.println</code>, <code>print</code>, variáveis,
+                <code>if/else</code>, <code>for</code>, <code>while</code>, funções e classes simples.
+              </p>
+              <div class="explain">
+                <strong>Dica:</strong> tente um programa que imprime "Olá Codária", soma dois números, ou usa um loop para listar 1 a 5.
+              </div>
+            </div>
+          </aside>
+          <div class="editor-pane">
+            <div class="editor-toolbar">
+              <span class="editor-lang" id="free-lang-label">Java</span>
+              <div class="editor-actions">
+                <button id="free-btn-clear" class="btn-ghost">↺ Limpar</button>
+                <button id="free-btn-example" class="btn-ghost">📋 Exemplo</button>
+                <button id="free-btn-run" class="btn-primary">▶ Executar</button>
+              </div>
+            </div>
+            <div class="editor-shell">
+              <pre class="editor-highlight" id="free-editor-highlight"></pre>
+              <textarea id="free-editor" spellcheck="false" autocomplete="off"></textarea>
+            </div>
+            <div class="output">
+              <div class="output-header">Saída do simulador</div>
+              <pre id="free-output">Pronto para programar!</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Loja -->
+    <section id="screen-shop" class="screen">
+      <div class="shop-wrap">
+        <button class="back-btn" data-back="screen-map">← Voltar</button>
+        <h2>🛒 Loja de Codária</h2>
+        <p class="muted">Use suas moedas para personalizar Pixel e o editor.</p>
+        <div id="shop-grid" class="shop-grid"></div>
+      </div>
+    </section>
+
+    <!-- Conquistas -->
+    <section id="screen-ach" class="screen">
+      <div class="shop-wrap">
+        <button class="back-btn" data-back="screen-map">← Voltar</button>
+        <h2>🏆 Conquistas</h2>
+        <div id="ach-grid" class="shop-grid"></div>
+      </div>
+    </section>
+
+    <!-- Placar Global -->
+    <section id="screen-leaderboard" class="screen">
+      <div class="settings-wrap" style="max-width: 900px;">
+        <button class="back-btn" data-back="screen-map">← Voltar</button>
+        <h2>📊 Placar Global</h2>
+        <p class="muted">Top 10 por credibilidade. Quem tenta colar perde pontos. Quem acerta com honestidade sobe!</p>
+        <div id="leaderboard-board" class="rank-board"></div>
+        <p class="muted small">A credibilidade depende do seu % de acerto e respeito às regras (sem cola).</p>
+      </div>
+    </section>
+
+    <!-- Configurações -->
+    <section id="screen-settings" class="screen">
+      <div class="settings-wrap">
+        <button class="back-btn" data-back="screen-menu">← Voltar</button>
+        <h2>⚙ Configurações</h2>
+
+        <div class="setting-row">
+          <label for="set-music">Volume da música</label>
+          <input id="set-music" type="range" min="0" max="100" />
+          <span id="set-music-val" class="muted">50</span>
+        </div>
+        <div class="setting-row">
+          <label for="set-sfx">Volume dos efeitos</label>
+          <input id="set-sfx" type="range" min="0" max="100" />
+          <span id="set-sfx-val" class="muted">70</span>
+        </div>
+        <div class="setting-row">
+          <label for="set-textspeed">Velocidade dos textos</label>
+          <select id="set-textspeed">
+            <option value="slow">Devagar</option>
+            <option value="normal" selected>Normal</option>
+            <option value="fast">Rápida</option>
+            <option value="instant">Instantânea</option>
+          </select>
+        </div>
+        <div class="setting-row">
+          <label for="set-theme">Tema</label>
+          <select id="set-theme">
+            <option value="dark" selected>Escuro</option>
+            <option value="light">Claro</option>
+          </select>
+        </div>
+        <div class="setting-row">
+          <label for="set-fullscreen">Tela cheia</label>
+          <button id="set-fullscreen" class="btn-secondary">Alternar tela cheia</button>
+        </div>
+        <div class="setting-row">
+          <label>URL do Servidor (sync online)</label>
+          <input id="set-backend" type="text" placeholder="https://meu-server.onrender.com" style="font-family: var(--font-code); padding: 8px;" />
+          <button id="set-backend-save" class="btn-secondary">Salvar</button>
+        </div>
+        <div class="setting-row">
+          <label>Código de Backup</label>
+          <button id="set-backup" class="btn-secondary">📤 Gerar / Copiar</button>
+          <button id="set-restore" class="btn-secondary">📥 Restaurar</button>
+        </div>
+        <div class="setting-row">
+          <label>Trocar senha</label>
+          <button id="set-changepwd" class="btn-secondary">🔑 Alterar</button>
+        </div>
+        <div class="setting-row danger">
+          <label>Resetar progresso</label>
+          <button id="set-reset" class="btn-danger">Apagar todo o progresso</button>
+        </div>
+        <div class="setting-row danger">
+          <label>Excluir conta</label>
+          <button id="set-delete" class="btn-danger">Apagar conta</button>
+        </div>
+
+        <h3 class="rank-title">🏅 Ranking Local</h3>
+        <ol id="rank-list" class="rank-list"></ol>
+      </div>
+    </section>
+
+    <!-- Diploma -->
+    <section id="screen-diploma" class="screen">
+      <div class="diploma-wrap">
+        <div class="diploma-card">
+          <div class="diploma-seal">🎓</div>
+          <h1 class="diploma-title">Diploma de Codária</h1>
+          <p class="diploma-pre">Pelo poder conferido pelos antigos servidores de Codária, declaramos que</p>
+          <h2 class="diploma-name" id="diploma-name">Pixel</h2>
+          <p class="diploma-text">concluiu com honra todos os mundos do reino e demonstrou domínio dos conceitos de:</p>
+          <ul class="diploma-skills" id="diploma-skills"></ul>
+          <p class="diploma-cert">é, a partir desta data, reconhecido como</p>
+          <h3 class="diploma-rank" id="diploma-rank">Programador Sênior em Java &amp; Lua</h3>
+          <div class="diploma-stats" id="diploma-stats"></div>
+          <div class="diploma-actions">
+            <button id="diploma-print" class="btn-secondary">🖨 Imprimir</button>
+            <button id="diploma-back"  class="btn-primary">Voltar ao mapa</button>
+          </div>
+          <p class="diploma-foot">Codária — Reino digital dos códigos · <span id="diploma-date"></span></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Créditos -->
+    <section id="screen-credits" class="screen">
+      <div class="credits-wrap">
+        <button class="back-btn" data-back="screen-menu">← Voltar</button>
+        <h2>📜 Créditos</h2>
+        <p>Code Quest: Java &amp; Lua</p>
+        <p class="muted">Um jogo educativo para iniciantes em programação.</p>
+        <ul>
+          <li>Design do jogo: equipe Code Quest</li>
+          <li>Conteúdo educativo: tutoriais de Java e Lua</li>
+          <li>Personagem: Pixel, o aprendiz</li>
+          <li>Mundo: Codária, terra dos códigos</li>
+        </ul>
+        <p class="muted small">Obrigado por jogar! Continue codificando. 💜</p>
+      </div>
+    </section>
+
+    <!-- Modal de chefão / vitória / dica -->
+    <div id="modal" class="modal hidden" role="dialog" aria-modal="true">
+      <div class="modal-card">
+        <h3 id="modal-title"></h3>
+        <div id="modal-body"></div>
+        <div id="modal-actions" class="modal-actions"></div>
+      </div>
+    </div>
+
+    <!-- Toasts -->
+    <div id="toasts" class="toasts" aria-live="polite"></div>
+  </main>
+
+  <!-- Scripts (ordem importa) -->
+  <script src="js/data.js"></script>
+  <script src="js/achievements300.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/anticheat.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/simulator.js"></script>
+  <script src="js/editor.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

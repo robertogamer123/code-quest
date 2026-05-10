@@ -1,0 +1,18 @@
+{
+  "name": "code-quest-server",
+  "version": "1.0.0",
+  "description": "Backend opcional para Code Quest — habilita login real entre dispositivos e ranking global compartilhado.",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "cors": "^2.8.5"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

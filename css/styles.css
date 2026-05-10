@@ -1,0 +1,1043 @@
+/* ===========================================================
+   Code Quest: Java & Lua — Tema MINECRAFT
+   - Blocos com borda dura (top claro / bottom escuro)
+   - Tipografia pixel (Press Start 2P + VT323)
+   - Painéis de pedra, madeira, terra e grama
+   - Cards = slots de inventário
+   - HUD = hotbar
+   =========================================================== */
+
+:root {
+  /* Paleta Minecraft */
+  --mc-grass:        #6cab39;
+  --mc-grass-light:  #87c84a;
+  --mc-grass-dark:   #3e6c1f;
+  --mc-dirt:         #8b5a2b;
+  --mc-dirt-light:   #a06d3c;
+  --mc-dirt-dark:    #5e3b1e;
+
+  --mc-stone:        #828282;
+  --mc-stone-light:  #a0a0a0;
+  --mc-stone-dark:   #4a4a4a;
+  --mc-cobble:       #707070;
+
+  --mc-wood:         #b08050;
+  --mc-wood-light:   #c89870;
+  --mc-wood-dark:    #7a542d;
+
+  --mc-sky:          #7cb9ff;
+  --mc-sky-dusk:     #314a72;
+  --mc-night:        #0a1024;
+
+  --mc-gold:         #fcdc5f;
+  --mc-gold-dark:    #c89e1a;
+  --mc-diamond:      #4dd0e1;
+  --mc-emerald:      #17a948;
+  --mc-redstone:     #d62828;
+  --mc-iron:         #d8d8d8;
+
+  --mc-text:         #ffffff;
+  --mc-text-shadow:  #3f3f3f;
+
+  --mc-panel-bg:     #c6c6c6;       /* fundo de inventário Minecraft */
+  --mc-panel-shadow: #555555;
+  --mc-slot-bg:      #8b8b8b;
+  --mc-slot-shadow:  #373737;
+
+  --font-title: "Press Start 2P", "Silkscreen", monospace;
+  --font-body:  "VT323", "Press Start 2P", monospace;
+  --font-code:  "VT323", "JetBrains Mono", "Consolas", monospace;
+}
+
+.theme-light {
+  /* No modo claro deixamos os painéis um pouco mais brilhantes */
+  --mc-panel-bg:     #dadada;
+  --mc-panel-shadow: #6a6a6a;
+}
+
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; padding: 0;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  -webkit-font-smoothing: none;
+  font-smoothing: none;
+}
+
+body {
+  font-family: var(--font-body);
+  font-size: 20px;
+  color: var(--mc-text);
+  text-shadow: 2px 2px 0 var(--mc-text-shadow);
+  min-height: 100vh;
+  overflow-x: hidden;
+  background:
+    /* céu noturno em cima */
+    linear-gradient(180deg, var(--mc-night) 0%, #11214a 35%, var(--mc-sky-dusk) 60%) fixed;
+}
+
+/* Fundo "mundo": grama e terra na parte inferior, repetindo blocos */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 60% 0 0 0;
+  z-index: 0;
+  background:
+    /* faixa de grama */
+    linear-gradient(180deg, var(--mc-grass-light) 0 4px, var(--mc-grass) 4px 22px, var(--mc-grass-dark) 22px 28px, var(--mc-dirt) 28px 100%),
+    /* "blocos" via repeating */
+    repeating-linear-gradient(90deg, transparent 0 31px, rgba(0,0,0,.18) 31px 32px);
+  background-blend-mode: normal, multiply;
+  background-size: 100% 100%, 32px 100%;
+  box-shadow: inset 0 4px 0 #2c4a14;
+}
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    /* "estrelas" em pixel */
+    radial-gradient(2px 2px at 12% 18%, #fff 50%, transparent 51%),
+    radial-gradient(2px 2px at 28% 8%, #fff 50%, transparent 51%),
+    radial-gradient(2px 2px at 47% 22%, #fff 50%, transparent 51%),
+    radial-gradient(2px 2px at 64% 10%, #fff 50%, transparent 51%),
+    radial-gradient(2px 2px at 78% 25%, #fff 50%, transparent 51%),
+    radial-gradient(2px 2px at 91% 6%, #fff 50%, transparent 51%),
+    radial-gradient(2px 2px at 9% 35%, #fff 50%, transparent 51%);
+  opacity: .9;
+  animation: stars 9s steps(2) infinite alternate;
+}
+@keyframes stars { from { opacity: .6; } to { opacity: 1; } }
+
+.theme-light body { background: linear-gradient(180deg, #b6dcff 0 60%, var(--mc-grass-light) 60%); }
+
+#starfield { display: none; } /* substituído pelo céu acima */
+
+#app { position: relative; z-index: 1; padding: 0 0 40px 0; }
+
+button { font-family: inherit; cursor: pointer; }
+.hidden { display: none !important; }
+
+/* ====== TIPOGRAFIA ====== */
+h1, h2, h3, h4 {
+  font-family: var(--font-title);
+  letter-spacing: 1px;
+  text-shadow: 3px 3px 0 #1a1a1a, 4px 4px 0 #1a1a1a;
+  margin: 12px 0;
+}
+h1 { font-size: 32px; line-height: 1.2; }
+h2 { font-size: 22px; }
+h3 { font-size: 16px; }
+h4 { font-size: 14px; }
+p, li, label, span, button { font-family: var(--font-body); }
+
+/* ====== TELAS ====== */
+.screen { display: none; padding: 24px 20px; max-width: 1200px; margin: 0 auto; }
+.screen.active { display: block; animation: dropIn .25s steps(4) both; }
+@keyframes dropIn { from { transform: translateY(-12px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* ====== BLOCOS DE BOTÃO ESTILO MINECRAFT ======
+   Botões parecem botões 3D do Minecraft (raised),
+   com borda preta + gradiente claro→escuro + sombra. */
+.btn-primary, .btn-secondary, .btn-danger, .btn-ghost,
+.back-btn, .level-card, .world-card, .lang-card, .shop-card,
+.story-card, .editor-toolbar, .output, .scene, .story-card pre,
+.menu-buttons button, .modal-card, .pill, .editor-shell,
+.compare-cell, .ach-card, .rank-list, .toast,
+input[type="range"], select {
+  border-radius: 0 !important;
+  image-rendering: pixelated;
+}
+
+.btn-primary, .btn-secondary, .btn-danger, .btn-ghost, .back-btn {
+  font-family: var(--font-body);
+  font-size: 22px;
+  letter-spacing: 1px;
+  padding: 10px 20px;
+  border: 3px solid #000;
+  color: #fff;
+  text-shadow: 2px 2px 0 #000;
+  cursor: pointer;
+  position: relative;
+  transition: transform .08s steps(2);
+}
+/* gerador de "raised" via box-shadow inset */
+.btn-primary {
+  background: linear-gradient(180deg, #66cc36 0%, #5aa628 50%, #3e7515 100%);
+  box-shadow:
+    inset 3px 3px 0 #b1ff7a,
+    inset -3px -3px 0 #2c5410,
+    4px 4px 0 #000;
+}
+.btn-primary:hover { background: linear-gradient(180deg, #80de4a 0%, #6cba30 50%, #4f8b1c 100%); }
+.btn-primary:active { transform: translate(2px, 2px); box-shadow: inset 3px 3px 0 #2c5410, inset -3px -3px 0 #b1ff7a, 0 0 0 #000; }
+
+.btn-secondary {
+  background: linear-gradient(180deg, var(--mc-stone-light) 0%, var(--mc-stone) 50%, var(--mc-stone-dark) 100%);
+  box-shadow:
+    inset 3px 3px 0 #c8c8c8,
+    inset -3px -3px 0 #3a3a3a,
+    4px 4px 0 #000;
+}
+.btn-secondary:hover { filter: brightness(1.1); }
+.btn-secondary:active { transform: translate(2px, 2px); box-shadow: inset 3px 3px 0 #3a3a3a, inset -3px -3px 0 #c8c8c8, 0 0 0 #000; }
+
+.btn-danger {
+  background: linear-gradient(180deg, #ff7a55 0%, var(--mc-redstone) 50%, #8a1818 100%);
+  box-shadow:
+    inset 3px 3px 0 #ffb59c,
+    inset -3px -3px 0 #5a0e0e,
+    4px 4px 0 #000;
+}
+.btn-danger:active { transform: translate(2px, 2px); }
+
+.btn-ghost, .back-btn {
+  background: linear-gradient(180deg, var(--mc-wood-light) 0%, var(--mc-wood) 50%, var(--mc-wood-dark) 100%);
+  font-size: 18px;
+  padding: 8px 14px;
+  box-shadow:
+    inset 2px 2px 0 #d9b890,
+    inset -2px -2px 0 #4f351a,
+    3px 3px 0 #000;
+}
+.btn-ghost:hover, .back-btn:hover { filter: brightness(1.08); }
+.btn-ghost:active, .back-btn:active { transform: translate(2px,2px); box-shadow: inset 2px 2px 0 #4f351a, inset -2px -2px 0 #d9b890, 0 0 0 #000; }
+
+.back-btn { margin-bottom: 14px; }
+
+/* ====== HUD = HOTBAR ====== */
+.hud {
+  position: sticky; top: 0; z-index: 50;
+  display: flex; justify-content: space-between; align-items: center;
+  gap: 12px; padding: 12px 18px;
+  background: linear-gradient(180deg, var(--mc-stone-light) 0%, var(--mc-stone) 25%, var(--mc-stone-dark) 100%);
+  border-bottom: 4px solid #000;
+  box-shadow: inset 0 4px 0 #c8c8c8, inset 0 -4px 0 #3a3a3a, 0 4px 0 #000;
+  font-family: var(--font-body);
+  text-shadow: 2px 2px 0 #000;
+}
+.theme-light .hud { background: linear-gradient(180deg, #ddd, #b3b3b3, #777); }
+.hud-left, .hud-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+.pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: linear-gradient(180deg, var(--mc-stone-light), var(--mc-stone-dark));
+  border: 2px solid #000;
+  box-shadow: inset 2px 2px 0 #c8c8c8, inset -2px -2px 0 #3a3a3a;
+  padding: 4px 10px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 2px 2px 0 #000;
+}
+.pill-label { color: var(--mc-gold); margin-right: 4px; text-shadow: 2px 2px 0 var(--mc-gold-dark); }
+
+/* ====== BARRA DE XP MINECRAFT ====== */
+.xpbar {
+  position: relative; width: 240px; height: 22px;
+  background: #1a1a1a;
+  border: 2px solid #000;
+  box-shadow: inset 2px 2px 0 #4a4a4a, inset -2px -2px 0 #4a4a4a;
+}
+.xpbar-fill {
+  height: 100%; width: 0%;
+  background: linear-gradient(180deg, #c9ff5b 0%, var(--mc-emerald) 50%, #0d6a2a 100%);
+  box-shadow: inset 0 2px 0 #f0ffb5, inset 0 -2px 0 #074718;
+  transition: width .4s steps(8);
+  position: relative;
+}
+/* "segmentos" como na barra de XP do Minecraft */
+.xpbar::after {
+  content: "";
+  position: absolute; inset: 2px 2px 2px 2px; pointer-events: none;
+  background: repeating-linear-gradient(90deg, transparent 0 23px, rgba(0,0,0,.45) 23px 25px);
+}
+.xpbar-text {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; font-weight: 700; color: #fff;
+  text-shadow: 2px 2px 0 #000;
+  letter-spacing: 1px;
+  z-index: 2;
+}
+
+/* ====== MENU PRINCIPAL ====== */
+.menu-wrap {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-height: 92vh; text-align: center; padding: 30px 16px;
+  position: relative;
+}
+.title-glow {
+  font-family: var(--font-title);
+  font-size: clamp(28px, 5vw, 56px);
+  margin: 0; line-height: 1.4;
+  color: #fff;
+  text-shadow:
+    4px 4px 0 #000,
+    -2px -2px 0 #555,
+    2px -2px 0 #555,
+    -2px 2px 0 #555,
+    0 4px 0 var(--mc-gold-dark);
+  background: none;
+  -webkit-background-clip: initial;
+  background-clip: initial;
+  -webkit-text-fill-color: initial;
+  letter-spacing: 2px;
+  animation: bobMenu 1.4s steps(2) infinite alternate;
+}
+@keyframes bobMenu { from { transform: translateY(-2px); } to { transform: translateY(2px); } }
+.title-glow .subtitle {
+  font-size: .55em; display: block; opacity: 1;
+  color: var(--mc-gold); text-shadow: 3px 3px 0 #5a3a00;
+  margin-top: 12px;
+}
+.tag {
+  font-size: 22px;
+  color: #fff; text-shadow: 2px 2px 0 #000;
+  margin: 18px 0 26px;
+}
+.menu-buttons { display: flex; flex-direction: column; gap: 12px; min-width: 320px; }
+.menu-buttons button { font-size: 22px; padding: 14px 22px; }
+.hint {
+  font-size: 18px; color: #fff;
+  text-shadow: 2px 2px 0 #000;
+  margin-top: 22px; max-width: 460px;
+  background: rgba(0,0,0,.5);
+  padding: 8px 14px;
+  border: 2px solid #000;
+}
+
+/* "Painel" de inventário compartilhado */
+.lang-cards, .worlds-grid, .levels-grid, .shop-grid {
+  display: grid; gap: 14px; margin-top: 16px;
+}
+.lang-cards   { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+.worlds-grid  { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+.levels-grid  { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+.shop-grid    { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+
+/* ===== Lang cards / world cards / level cards / shop / ach: estilo "slot de inventário" ===== */
+.lang-card, .world-card, .level-card, .shop-card, .ach-card, .story-card, .modal-card, .compare-cell, .rank-list {
+  background:
+    linear-gradient(180deg, var(--mc-panel-bg) 0%, #b0b0b0 100%);
+  border: 4px solid #000;
+  box-shadow:
+    inset 4px 4px 0 #fefefe,
+    inset -4px -4px 0 #555,
+    6px 6px 0 #000;
+  color: #1a1a1a;
+  text-shadow: none;
+  padding: 16px 16px 14px;
+  text-align: left;
+  transition: transform .12s steps(2);
+}
+.lang-card h3, .world-card h3, .level-card .lv-title,
+.shop-card h4, .ach-card h4, .story-card h3, .modal-card h3, .compare-cell h5 {
+  color: #1a1a1a;
+  text-shadow: 1px 1px 0 #fff;
+}
+.lang-card p, .world-card .muted, .level-card .lv-num,
+.shop-card .muted, .ach-card .muted, .story-card p, .compare-cell pre {
+  color: #2a2a2a;
+  text-shadow: none;
+}
+.muted { color: #2a2a2a; text-shadow: none; }
+.muted.small { font-size: 16px; }
+
+.lang-card:hover, .world-card:hover, .level-card:hover, .shop-card:hover {
+  transform: translate(-2px, -2px);
+  box-shadow:
+    inset 4px 4px 0 #fefefe,
+    inset -4px -4px 0 #555,
+    8px 8px 0 #000;
+}
+.lang-card .lang-icon { font-size: 36px; line-height: 1; }
+.lang-card code, .compare-cell pre {
+  display: inline-block;
+  margin-top: 8px;
+  background: #1f1f1f;
+  color: var(--mc-emerald);
+  padding: 6px 10px;
+  border: 2px solid #000;
+  font-family: var(--font-code);
+  font-size: 18px;
+  text-shadow: none;
+  box-shadow: inset 2px 2px 0 #3a3a3a;
+}
+
+/* ===== World cards: cor temática por mundo (cabeçalho colorido) ===== */
+.world-card {
+  position: relative; padding-top: 56px;
+}
+.world-card::before {
+  content: ""; position: absolute; top: 0; left: 0; right: 0; height: 40px;
+  background: var(--world-color, var(--mc-grass));
+  border-bottom: 4px solid #000;
+  box-shadow: inset 0 4px 0 rgba(255,255,255,.4), inset 0 -4px 0 rgba(0,0,0,.35);
+}
+.world-card .world-emoji {
+  position: absolute; top: 4px; left: 12px; font-size: 32px;
+  text-shadow: 2px 2px 0 rgba(0,0,0,.6);
+  background: rgba(0,0,0,.25);
+  padding: 0 8px;
+  border: 2px solid #000;
+}
+.world-card .lv-tag {
+  position: absolute; top: 6px; right: 12px;
+  background: rgba(0,0,0,.7);
+  color: #fff; text-shadow: 2px 2px 0 #000;
+  padding: 4px 8px;
+  border: 2px solid #000;
+  font-size: 14px;
+  font-weight: 700;
+}
+.world-card.locked { opacity: .55; cursor: not-allowed; }
+.world-card .progress {
+  height: 14px;
+  background: #1a1a1a;
+  border: 2px solid #000;
+  margin-top: 10px;
+  position: relative;
+  overflow: hidden;
+}
+.world-card .progress-fill {
+  height: 100%;
+  background: linear-gradient(180deg, #ffe66e 0%, var(--mc-gold) 50%, #b07e00 100%);
+  box-shadow: inset 0 2px 0 #fff5b8, inset 0 -2px 0 #5a3e00;
+}
+.world-card .progress-text { font-size: 16px; color: #1a1a1a; margin-top: 6px; }
+
+/* ===== Level cards: slots ===== */
+.level-card {
+  padding: 12px 14px;
+  background: linear-gradient(180deg, #d8d8d8 0%, #b8b8b8 100%);
+}
+.level-card .lv-num { font-size: 14px; color: #555; }
+.level-card .lv-title { font-weight: 700; margin: 4px 0; font-family: var(--font-title); font-size: 11px; line-height: 1.4; text-shadow: 1px 1px 0 #fff; }
+.level-card .lv-tag {
+  display: inline-block; font-size: 13px; padding: 2px 8px;
+  background: var(--mc-emerald); color: #fff; text-shadow: 2px 2px 0 #003e15;
+  border: 2px solid #000;
+  margin-top: 6px;
+}
+.level-card.completed .lv-tag { background: var(--mc-emerald); }
+.level-card.boss .lv-tag { background: var(--mc-redstone); text-shadow: 2px 2px 0 #5a0e0e; }
+.level-card.boss { background: linear-gradient(180deg, #f8b8b8 0%, #c4807a 100%); }
+.level-card.locked { opacity: .55; cursor: not-allowed; }
+.level-card.completed { background: linear-gradient(180deg, #c0e8b0 0%, #95c878 100%); }
+
+/* ===== Tela de desafio ===== */
+.challenge-wrap { padding: 4px; }
+.challenge-header {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 14px;
+}
+.challenge-header h2 { margin: 0; flex: 1 0 auto; }
+
+.challenge-tabs {
+  display: inline-flex;
+  background: #2a2a2a;
+  border: 3px solid #000;
+  box-shadow: inset 2px 2px 0 #555, inset -2px -2px 0 #111;
+  padding: 4px;
+  gap: 4px;
+}
+.tab {
+  border: 2px solid #000;
+  background: linear-gradient(180deg, var(--mc-stone) 0%, var(--mc-stone-dark) 100%);
+  color: #ddd; text-shadow: 2px 2px 0 #000;
+  padding: 6px 14px; font-weight: 700; font-size: 18px;
+  font-family: var(--font-body);
+}
+.tab.active {
+  background: linear-gradient(180deg, var(--mc-emerald) 0%, #0d6a2a 100%);
+  color: #fff; text-shadow: 2px 2px 0 #003e15;
+  box-shadow: inset 2px 2px 0 #6dd896, inset -2px -2px 0 #052f12;
+}
+
+.challenge-body {
+  display: grid; grid-template-columns: 360px 1fr; gap: 16px;
+}
+@media (max-width: 900px) { .challenge-body { grid-template-columns: 1fr; } }
+
+.challenge-info { display: flex; flex-direction: column; gap: 12px; }
+.story-card {
+  background:
+    /* textura de madeira */
+    repeating-linear-gradient(90deg, var(--mc-wood-dark) 0 4px, var(--mc-wood) 4px 38px, var(--mc-wood-dark) 38px 42px),
+    var(--mc-wood);
+  background-blend-mode: multiply;
+  color: #fff; text-shadow: 2px 2px 0 #2a1a07;
+}
+.story-card h3 { color: var(--mc-gold); text-shadow: 2px 2px 0 #2a1a07; margin: 0 0 6px 0; }
+.story-card p { color: #fff5e0; text-shadow: 1px 1px 0 #2a1a07; }
+
+.explain {
+  margin-top: 10px; font-size: 18px;
+  padding: 10px 12px;
+  background: rgba(0,0,0,.35);
+  border-left: 4px solid var(--mc-gold);
+  color: #fff;
+  text-shadow: 1px 1px 0 #000;
+}
+.example {
+  margin-top: 10px; padding: 10px 12px;
+  background: #1a1a1a;
+  border: 2px solid #000;
+  font-family: var(--font-code);
+  font-size: 18px; color: var(--mc-emerald);
+  white-space: pre-wrap;
+  text-shadow: none;
+  box-shadow: inset 2px 2px 0 #3a3a3a, inset -2px -2px 0 #0a0a0a;
+}
+
+/* ===== Cena temática por mundo (estilo Minecraft) ===== */
+.scene {
+  height: 180px; overflow: hidden;
+  background: var(--mc-sky);
+  border: 4px solid #000;
+  box-shadow: inset 4px 4px 0 #aed3ff, inset -4px -4px 0 #4a8cd6, 4px 4px 0 #000;
+  position: relative;
+}
+.scene::before {
+  /* "chão" pixelado: grama em cima + terra */
+  content: "";
+  position: absolute; left: 0; right: 0; bottom: 0; height: 70px;
+  background:
+    linear-gradient(180deg, var(--mc-grass-light) 0 6px, var(--mc-grass) 6px 22px, var(--mc-grass-dark) 22px 28px, var(--mc-dirt-light) 28px 34px, var(--mc-dirt) 34px 60px, var(--mc-dirt-dark) 60px 70px),
+    repeating-linear-gradient(90deg, rgba(0,0,0,.1) 0 31px, rgba(0,0,0,.3) 31px 32px);
+  background-size: 100% 100%, 32px 100%;
+}
+.scene::after {
+  /* nuvens em pixel */
+  content: "";
+  position: absolute; top: 16px; left: 0; right: 0; height: 32px;
+  background:
+    radial-gradient(closest-side, #fff 95%, transparent 100%) 8% 50%/64px 22px no-repeat,
+    radial-gradient(closest-side, #fff 95%, transparent 100%) 38% 60%/96px 26px no-repeat,
+    radial-gradient(closest-side, #fff 95%, transparent 100%) 72% 40%/72px 22px no-repeat;
+  filter: drop-shadow(2px 2px 0 #aac4d8);
+  animation: clouds 18s linear infinite;
+}
+@keyframes clouds {
+  from { transform: translateX(-10px); }
+  to   { transform: translateX(20px); }
+}
+
+/* "Pixel" - personagem estilo Steve simplificado */
+.scene .pixel {
+  position: absolute; bottom: 56px; left: 28px;
+  width: 28px; height: 56px;
+  background:
+    /* cabeça (8px) */
+    linear-gradient(180deg, #c08967 0 12px,            /* cabelo */
+                            #c08967 12px 14px,
+                            /* rosto */
+                            #f0c08a 14px 28px),
+    /* corpo: camisa */
+    linear-gradient(180deg, transparent 0 28px, #29b6f6 28px 42px, transparent 42px 100%),
+    /* pernas */
+    linear-gradient(180deg, transparent 0 42px, #335a8a 42px 56px);
+  background-size: 100% 100%;
+  background-blend-mode: normal;
+  background:
+    linear-gradient(180deg,
+      #c08967 0 4px,        /* cabelo */
+      #c08967 4px 12px,
+      #f0c08a 12px 28px,    /* rosto */
+      #2196f3 28px 44px,    /* camisa azul */
+      #335a8a 44px 56px);   /* pernas */
+  border: 2px solid #000;
+  box-shadow: 4px 4px 0 rgba(0,0,0,.6);
+  animation: bob 1.6s steps(2) infinite;
+}
+.scene .pixel::before {
+  /* olhos */
+  content: "";
+  position: absolute; top: 16px; left: 4px; right: 4px; height: 4px;
+  background:
+    linear-gradient(90deg, #fff 0 6px, #1a1a1a 6px 10px, transparent 10px 14px, #fff 14px 20px, #1a1a1a 20px 24px);
+}
+.scene .pixel::after {
+  /* boca */
+  content: "";
+  position: absolute; top: 22px; left: 8px; right: 8px; height: 2px;
+  background: #6b3a1a;
+}
+@keyframes bob { 50% { transform: translateY(-3px); } }
+
+/* tabuleta (placa de madeira) com nome do mundo */
+.scene .scene-title {
+  position: absolute; top: 8px; right: 10px;
+  background: linear-gradient(180deg, var(--mc-wood-light) 0%, var(--mc-wood) 100%);
+  color: #fff; text-shadow: 2px 2px 0 #2a1a07;
+  border: 3px solid #000;
+  box-shadow: inset 2px 2px 0 #d9b890, inset -2px -2px 0 #4f351a;
+  padding: 4px 8px;
+  font-size: 14px;
+  font-family: var(--font-title);
+  letter-spacing: 1px;
+}
+
+/* Variantes de mundos: trocam a "vibe" do céu */
+.scene[data-art="commands"]  { background: var(--mc-sky); }
+.scene[data-art="variables"] { background: linear-gradient(180deg, var(--mc-sky), #6cab39 80%); }
+.scene[data-art="ifs"]       { background: linear-gradient(180deg, #0a0e1a 0%, #2a1a3a 100%); }
+.scene[data-art="loops"]     { background: linear-gradient(180deg, #4a98c4 0%, var(--mc-sky) 100%); }
+.scene[data-art="functions"] { background: linear-gradient(180deg, #b4d5ff 0%, #ffd97a 70%); }
+.scene[data-art="objects"]   { background: linear-gradient(180deg, #2a1240 0%, #5a1480 80%); }
+
+/* Skins (compradas na loja) */
+.scene.skin-pixel-cyber .pixel {
+  background: linear-gradient(180deg,
+    #44ddff 0 4px, #44ddff 4px 12px,
+    #f0c08a 12px 28px,
+    #7c5cff 28px 44px,
+    #2a1a55 44px 56px);
+}
+.scene.skin-pixel-knight .pixel {
+  background: linear-gradient(180deg,
+    #c8c8c8 0 4px, #c8c8c8 4px 12px,
+    #f0c08a 12px 28px,
+    #d62828 28px 44px,
+    #4a2a2a 44px 56px);
+}
+
+/* ====== EDITOR (tela "obsidian") ====== */
+.editor-pane { display: flex; flex-direction: column; gap: 10px; }
+.editor-toolbar {
+  display: flex; justify-content: space-between; align-items: center;
+  background: linear-gradient(180deg, var(--mc-stone) 0%, var(--mc-stone-dark) 100%);
+  border: 3px solid #000;
+  box-shadow: inset 2px 2px 0 #aaa, inset -2px -2px 0 #2a2a2a, 4px 4px 0 #000;
+  padding: 6px 10px;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.editor-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.editor-lang {
+  font-family: var(--font-title);
+  font-size: 12px; padding: 6px 10px;
+  background: var(--mc-gold);
+  color: #2a1800; text-shadow: 1px 1px 0 #fff5b8;
+  border: 2px solid #000;
+}
+.editor-lang[data-lang="lua"] { background: #29b6f6; color: #001a2a; text-shadow: 1px 1px 0 #b8e8ff; }
+
+.editor-shell {
+  position: relative;
+  background: #0a0a14;        /* obsidian */
+  border: 4px solid #000;
+  box-shadow: inset 3px 3px 0 #2a2c40, inset -3px -3px 0 #050508, 4px 4px 0 #000;
+  font-family: var(--font-code);
+  min-height: 240px;
+}
+.editor-highlight, #editor, #free-editor {
+  margin: 0; padding: 14px 16px; border: 0;
+  font-family: var(--font-code);
+  font-size: 22px; line-height: 1.4;
+  width: 100%; min-height: 240px;
+  white-space: pre-wrap; word-break: break-word;
+  background: transparent;
+  letter-spacing: .5px;
+}
+.editor-highlight {
+  position: absolute; inset: 0; pointer-events: none;
+  color: #ffffff; overflow: auto;
+  text-shadow: 1px 1px 0 #000;
+}
+#editor, #free-editor {
+  position: relative;
+  color: transparent; caret-color: #fff;
+  resize: vertical; outline: none;
+  background: transparent;
+}
+#editor::selection, #free-editor::selection { background: rgba(124, 92, 255, .35); color: transparent; }
+
+/* Tokens — cores estilo "diamante / esmeralda / ouro" do Minecraft */
+.tk-key { color: #ff79c6; text-shadow: 2px 2px 0 #4a1c34; }
+.tk-typ { color: var(--mc-gold); text-shadow: 2px 2px 0 #4a3500; }
+.tk-str { color: var(--mc-emerald); text-shadow: 2px 2px 0 #033e1c; }
+.tk-num { color: var(--mc-diamond); text-shadow: 2px 2px 0 #114c54; }
+.tk-com { color: #888; font-style: normal; text-shadow: none; }
+.tk-fun { color: #ffe066; text-shadow: 2px 2px 0 #3a2a00; }
+.tk-bul { color: #ff9b3d; text-shadow: 2px 2px 0 #3a1f00; }
+
+/* Saída do simulador (terminal) */
+.output {
+  background: linear-gradient(180deg, var(--mc-stone) 0%, var(--mc-stone-dark) 100%);
+  border: 3px solid #000;
+  box-shadow: inset 2px 2px 0 #aaa, inset -2px -2px 0 #2a2a2a, 4px 4px 0 #000;
+  padding: 6px 10px;
+}
+.output-header {
+  font-family: var(--font-title);
+  font-size: 12px; color: #fff; text-shadow: 2px 2px 0 #000;
+  padding: 4px 0; letter-spacing: 1px;
+}
+.output pre {
+  margin: 0; padding: 10px 12px;
+  background: #0a0a14;
+  color: #f0f0f0;
+  border: 3px solid #000;
+  box-shadow: inset 2px 2px 0 #2a2c40, inset -2px -2px 0 #050508;
+  min-height: 60px; max-height: 240px; overflow: auto;
+  font-family: var(--font-code); font-size: 20px; line-height: 1.35;
+  white-space: pre-wrap;
+  text-shadow: 2px 2px 0 #000;
+}
+.output.success pre { box-shadow: inset 0 0 0 4px var(--mc-emerald), inset 2px 2px 0 #2a2c40; }
+.output.error   pre { box-shadow: inset 0 0 0 4px var(--mc-redstone), inset 2px 2px 0 #2a2c40; }
+
+/* ====== LOJA ====== */
+.shop-card {
+  background: linear-gradient(180deg, #d8d8d8 0%, #b8b8b8 100%);
+  color: #1a1a1a; text-shadow: 1px 1px 0 #fff;
+}
+.shop-card .preview {
+  height: 64px;
+  border: 3px solid #000;
+  box-shadow: inset 3px 3px 0 rgba(255,255,255,.25), inset -3px -3px 0 rgba(0,0,0,.35);
+  margin-bottom: 10px;
+  background: linear-gradient(135deg, #888, #444);
+}
+.shop-card.theme-syntax-mono .preview { background: linear-gradient(135deg, #555, #1a1a1a); }
+.shop-card.theme-syntax-sun .preview  { background: linear-gradient(135deg, #ffae3f, var(--mc-redstone)); }
+.shop-card.skin-pixel-cyber .preview  { background: linear-gradient(135deg, #29d6ff, #7c5cff); }
+.shop-card.skin-pixel-knight .preview { background: linear-gradient(135deg, #ddd, #c0392b); }
+.shop-card.fx-confetti .preview       { background: linear-gradient(135deg, var(--mc-emerald), var(--mc-diamond)); }
+.shop-card.fx-pixels .preview         { background: linear-gradient(135deg, var(--mc-gold), #d68a00); }
+.shop-card .price {
+  color: #d97700; text-shadow: 1px 1px 0 #fff;
+  font-weight: 700; margin-top: 6px;
+}
+.shop-card.owned .price { color: var(--mc-grass-dark); }
+.shop-card.equipped {
+  background: linear-gradient(180deg, #d6f0c0 0%, #a8d68a 100%);
+  outline: 4px solid var(--mc-emerald);
+  outline-offset: -8px;
+}
+
+/* Conquistas — estilo placa de troféu */
+.ach-card {
+  background: linear-gradient(180deg, #eedf95 0%, #b89c4a 100%);
+  color: #2a1d00; text-shadow: 1px 1px 0 #fff8c0;
+}
+.ach-card.locked { background: linear-gradient(180deg, #cccccc 0%, #888888 100%); color: #2a2a2a; }
+.ach-card .ach-emoji { font-size: 28px; }
+.ach-card h4 { margin: 6px 0 2px 0; font-size: 12px; }
+.ach-card .lv-tag {
+  display: inline-block; font-size: 13px; padding: 2px 8px;
+  background: var(--mc-emerald); color: #fff; text-shadow: 2px 2px 0 #003e15;
+  border: 2px solid #000;
+}
+.ach-card.locked .lv-tag { background: var(--mc-stone-dark); }
+
+/* ====== Configurações ====== */
+.settings-wrap { padding: 4px; max-width: 740px; }
+.setting-row {
+  display: grid; grid-template-columns: 240px 1fr auto; align-items: center;
+  gap: 12px; padding: 12px 0; border-bottom: 3px dashed rgba(0,0,0,.45);
+}
+.setting-row.danger { border-bottom-color: var(--mc-redstone); }
+.setting-row label { font-weight: 700; font-size: 20px; color: #fff; text-shadow: 2px 2px 0 #000; }
+.setting-row input[type="range"] {
+  width: 100%;
+  appearance: none; height: 18px;
+  background: #1a1a1a;
+  border: 3px solid #000;
+  box-shadow: inset 2px 2px 0 #4a4a4a, inset -2px -2px 0 #4a4a4a;
+}
+.setting-row input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 22px; height: 22px;
+  background: var(--mc-gold);
+  border: 3px solid #000;
+  box-shadow: inset 2px 2px 0 #fff5b8, inset -2px -2px 0 #5a3e00;
+  cursor: pointer;
+}
+.setting-row select {
+  background: linear-gradient(180deg, var(--mc-stone), var(--mc-stone-dark));
+  color: #fff; text-shadow: 2px 2px 0 #000;
+  border: 3px solid #000;
+  box-shadow: inset 2px 2px 0 #aaa, inset -2px -2px 0 #2a2a2a;
+  padding: 8px 10px;
+  font-family: var(--font-body); font-size: 18px;
+}
+
+/* Ranking */
+.rank-title { margin-top: 28px; }
+.rank-list {
+  background: linear-gradient(180deg, var(--mc-panel-bg), #a8a8a8);
+  color: #1a1a1a; text-shadow: 1px 1px 0 #fff;
+  padding: 12px 28px;
+}
+.rank-list li { padding: 4px 0; font-size: 20px; list-style: square; }
+
+/* ====== MODAL = "PLACA" DE MADEIRA ====== */
+.modal {
+  position: fixed; inset: 0; z-index: 100;
+  background: rgba(0,0,0,.65);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+  animation: fadeIn .15s steps(3) both;
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.modal-card {
+  background:
+    repeating-linear-gradient(90deg, var(--mc-wood-dark) 0 4px, var(--mc-wood) 4px 38px, var(--mc-wood-dark) 38px 42px),
+    var(--mc-wood);
+  background-blend-mode: multiply;
+  color: #fff; text-shadow: 2px 2px 0 #2a1a07;
+  border: 4px solid #000;
+  box-shadow: inset 4px 4px 0 #d9b890, inset -4px -4px 0 #4f351a, 8px 8px 0 #000;
+  padding: 22px 22px 18px;
+  max-width: 560px; width: 100%;
+  animation: popIn .25s steps(4) both;
+}
+@keyframes popIn { from { transform: scale(.85); } to { transform: scale(1); } }
+.modal-card h3 { color: var(--mc-gold); }
+.modal-card p { color: #fff5e0; }
+.modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; flex-wrap: wrap; }
+
+/* Toast — popup de conquista estilo "advancement" do Minecraft */
+.toasts {
+  position: fixed; right: 20px; bottom: 20px;
+  display: flex; flex-direction: column;
+  gap: 8px; z-index: 200; max-width: 360px;
+}
+.toast {
+  background: linear-gradient(180deg, var(--mc-stone) 0%, var(--mc-stone-dark) 100%);
+  border: 3px solid #000;
+  box-shadow: inset 2px 2px 0 #aaa, inset -2px -2px 0 #2a2a2a, 4px 4px 0 #000;
+  color: #fff; text-shadow: 2px 2px 0 #000;
+  padding: 10px 14px;
+  font-size: 18px;
+  animation: tIn .25s steps(4) both;
+}
+.toast.success {
+  background: linear-gradient(180deg, var(--mc-emerald) 0%, #0d6a2a 100%);
+  box-shadow: inset 2px 2px 0 #6dd896, inset -2px -2px 0 #052f12, 4px 4px 0 #000;
+}
+.toast.error {
+  background: linear-gradient(180deg, #ff7a55 0%, var(--mc-redstone) 100%);
+  box-shadow: inset 2px 2px 0 #ffb59c, inset -2px -2px 0 #5a0e0e, 4px 4px 0 #000;
+}
+.toast.coin {
+  background: linear-gradient(180deg, #ffe66e 0%, var(--mc-gold) 70%);
+  color: #2a1d00; text-shadow: 1px 1px 0 #fff5b8;
+  box-shadow: inset 2px 2px 0 #fff5b8, inset -2px -2px 0 #5a3e00, 4px 4px 0 #000;
+}
+@keyframes tIn { from { transform: translateX(20px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* Cena com tremor (chefão, erro) */
+.scene.shake { animation: shake .3s steps(3) both; }
+@keyframes shake { 0%,100%{ transform: translateX(0);} 25%{ transform: translateX(-6px);} 75%{ transform: translateX(6px);} }
+
+.fx-burst {
+  position: fixed; pointer-events: none; z-index: 90;
+  font-size: 24px;
+  text-shadow: 2px 2px 0 #000;
+  animation: burst 800ms steps(8) forwards;
+}
+@keyframes burst {
+  from { transform: translate(-50%, -50%) scale(.6); opacity: 1; }
+  to   { transform: translate(-50%, -120%) scale(1.2); opacity: 0; }
+}
+
+/* Comparação Java/Lua lado a lado */
+.compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (max-width: 720px) { .compare-grid { grid-template-columns: 1fr; } }
+.compare-cell {
+  background: #1a1a1a;
+  border: 3px solid #000;
+  box-shadow: inset 2px 2px 0 #3a3a3a;
+  padding: 10px 12px;
+  font-family: var(--font-code);
+  font-size: 18px;
+  color: var(--mc-emerald);
+  text-shadow: none;
+}
+.compare-cell h5 {
+  margin: 0 0 6px 0;
+  font-family: var(--font-title); font-size: 12px;
+  color: var(--mc-gold);
+  text-shadow: 2px 2px 0 #000;
+}
+.compare-cell pre { color: var(--mc-emerald); font-size: 18px; }
+
+/* Créditos */
+.credits-wrap { padding: 4px; max-width: 720px; }
+.credits-wrap ul { line-height: 1.8; font-size: 20px; }
+.credits-wrap p { font-size: 22px; }
+
+/* Pequenas utilidades */
+.row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.spacer { flex: 1; }
+
+/* Mapa de mundos: título grande estilo placa */
+.map-title {
+  display: inline-block;
+  background: linear-gradient(180deg, var(--mc-wood-light), var(--mc-wood-dark));
+  padding: 10px 18px;
+  border: 4px solid #000;
+  box-shadow: inset 3px 3px 0 #d9b890, inset -3px -3px 0 #4f351a, 6px 6px 0 #000;
+  color: #fff; text-shadow: 3px 3px 0 #2a1a07;
+}
+
+/* Garantir que botões de mundo, lang, level e shop não tenham underline */
+button { text-decoration: none; }
+
+/* Setting input value display */
+.setting-row span.muted { color: var(--mc-gold); text-shadow: 2px 2px 0 #4a3500; font-size: 22px; font-weight: 700; }
+
+/* ====== DIPLOMA — pergaminho com bordas decorativas ====== */
+.diploma-wrap { padding: 20px; display: flex; justify-content: center; }
+.diploma-card {
+  position: relative;
+  max-width: 720px; width: 100%;
+  background: linear-gradient(180deg, #f7e7c0 0%, #e8d39a 100%);
+  border: 6px solid #000;
+  box-shadow:
+    inset 6px 6px 0 #fff5dc,
+    inset -6px -6px 0 #8a6a2e,
+    8px 8px 0 #000,
+    0 0 0 12px var(--mc-gold-dark) inset;
+  padding: 36px 32px 28px;
+  color: #2a1d00;
+  text-shadow: 1px 1px 0 #fff5b8;
+  font-family: var(--font-body);
+}
+.diploma-seal {
+  position: absolute; top: -22px; right: -22px;
+  width: 80px; height: 80px;
+  background: linear-gradient(180deg, var(--mc-gold), var(--mc-gold-dark));
+  border: 4px solid #000;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 38px; line-height: 1;
+  box-shadow: inset 3px 3px 0 #fff5b8, inset -3px -3px 0 #5a3e00, 4px 4px 0 #000;
+  transform: rotate(-12deg);
+}
+.diploma-title {
+  font-family: var(--font-title); font-size: 22px; text-align: center;
+  color: #5a3e00; text-shadow: 2px 2px 0 #fff5b8;
+  margin: 0 0 12px;
+}
+.diploma-pre, .diploma-text, .diploma-cert { text-align: center; font-size: 20px; }
+.diploma-name {
+  font-family: var(--font-title); font-size: 28px; text-align: center;
+  color: var(--mc-redstone); text-shadow: 2px 2px 0 #fff5b8;
+  letter-spacing: 2px; margin: 12px 0 6px;
+}
+.diploma-rank {
+  font-family: var(--font-title); font-size: 18px; text-align: center;
+  color: #2a4a8a; text-shadow: 2px 2px 0 #fff5b8;
+  margin: 8px 0 12px; letter-spacing: 1px;
+}
+.diploma-skills {
+  list-style: square inside; padding: 8px 12px; margin: 10px auto;
+  background: rgba(255, 245, 184, .55);
+  border: 3px dashed var(--mc-gold-dark);
+  max-width: 540px; font-size: 18px;
+}
+.diploma-skills li { padding: 2px 0; }
+.diploma-stats {
+  display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;
+  margin: 12px 0;
+}
+.diploma-stats span {
+  background: linear-gradient(180deg, #fff5dc, #d6b76a);
+  border: 3px solid #5a3e00;
+  padding: 6px 12px; font-weight: 700; color: #2a1d00;
+  text-shadow: 1px 1px 0 #fff5b8;
+}
+.diploma-actions { display: flex; justify-content: center; gap: 10px; margin: 16px 0 6px; flex-wrap: wrap; }
+.diploma-foot { text-align: center; color: #5a3e00; font-size: 16px; margin-top: 14px; }
+@media print {
+  body, body::before, body::after, #starfield { background: #fff !important; }
+  .hud, .diploma-actions { display: none !important; }
+}
+
+/* ====== Tela de LOGIN ====== */
+.login-wrap {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-height: 90vh; text-align: center; padding: 30px 16px; gap: 16px;
+}
+.login-card {
+  width: 100%; max-width: 460px;
+  background: linear-gradient(180deg, var(--mc-panel-bg) 0%, #b0b0b0 100%);
+  border: 4px solid #000;
+  box-shadow: inset 4px 4px 0 #fefefe, inset -4px -4px 0 #555, 6px 6px 0 #000;
+  padding: 18px 18px 14px;
+  color: #1a1a1a; text-shadow: 1px 1px 0 #fff;
+}
+.login-tabs {
+  display: flex; gap: 4px; margin-bottom: 12px;
+  background: #2a2a2a; border: 3px solid #000; padding: 3px;
+}
+.login-tabs .tab {
+  flex: 1; padding: 8px; font-family: var(--font-body);
+  border: 2px solid #000;
+  background: linear-gradient(180deg, var(--mc-stone), var(--mc-stone-dark));
+  color: #ddd; text-shadow: 2px 2px 0 #000; font-weight: 700;
+}
+.login-tabs .tab.active {
+  background: linear-gradient(180deg, var(--mc-emerald), #0d6a2a);
+  text-shadow: 2px 2px 0 #003e15;
+}
+.login-form { display: flex; flex-direction: column; gap: 10px; text-align: left; }
+.login-form label { font-size: 18px; color: #1a1a1a; text-shadow: 1px 1px 0 #fff; }
+.login-form input, .login-form textarea {
+  display: block; width: 100%;
+  font-family: var(--font-code); font-size: 18px;
+  background: #0a0a14; color: #fff; text-shadow: 1px 1px 0 #000;
+  border: 3px solid #000;
+  box-shadow: inset 2px 2px 0 #2a2c40, inset -2px -2px 0 #050508;
+  padding: 8px 10px; outline: none;
+  margin-top: 4px;
+}
+.login-form button { margin-top: 6px; }
+.login-error {
+  color: #fff; background: var(--mc-redstone); border: 3px solid #000;
+  padding: 6px 10px; font-size: 16px; min-height: 8px; margin: 0;
+}
+.login-error:empty { display: none; }
+.login-hint { color: #2a2a2a; font-size: 15px; margin: 10px 0 0; line-height: 1.4; }
+.login-extra {
+  width: 100%; max-width: 720px; color: #fff; text-shadow: 2px 2px 0 #000;
+}
+.login-extra summary {
+  cursor: pointer; padding: 8px 12px; font-size: 18px;
+  background: rgba(0,0,0,.5); border: 2px solid #000;
+  display: inline-block;
+}
+
+/* ====== Tabela de ranking ====== */
+.rank-board { margin-top: 12px; overflow-x: auto; }
+.rank-table {
+  width: 100%; border-collapse: collapse;
+  background: var(--mc-panel-bg); color: #1a1a1a;
+  border: 4px solid #000;
+  font-family: var(--font-body); font-size: 18px;
+}
+.rank-table thead th {
+  background: linear-gradient(180deg, var(--mc-emerald), #0d6a2a);
+  color: #fff; text-shadow: 2px 2px 0 #003e15;
+  border: 2px solid #000; padding: 8px 10px;
+  font-family: var(--font-title); font-size: 11px; letter-spacing: 1px;
+}
+.rank-table tbody td {
+  border: 2px solid #000; padding: 6px 10px;
+  text-shadow: 1px 1px 0 #fff;
+}
+.rank-table tbody tr:nth-child(odd) { background: rgba(255, 245, 184, .35); }
+.rank-table .rk-pos { font-weight: 700; text-align: center; width: 40px; }
+.rank-table .rk-name { font-weight: 700; }
+.rank-table .rk-cred { color: #074718; font-weight: 700; }
+.rank-table .rk-acc  { font-weight: 700; }
+.rank-table .rk-completed, .rank-table .rk-lvl { text-align: center; }
+
+/* ====== Pílula de credibilidade no HUD ====== */
+#hud-cred { background: linear-gradient(180deg, var(--mc-emerald), #0d6a2a); }
+#hud-cred-val { color: #fff; }
